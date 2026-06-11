@@ -626,12 +626,14 @@ int main(int argc, char** argv) {
              << ", seed=" << seed << ", t=" << tlimit << "s) ==\n";
         // se regeneran bloques dentro de solveOne (1 vez por instancia)
         RunResult r = solveOne(I, tlimit, gamma, seed, min_fr, max_bl, true);
-        cout << file << " p" << p << "  gamma=" << gamma << " seed=" << seed
-             << "  relleno=" << fixed << setprecision(3) << r.fill
+        cout << file << " p" << p << "  gamma=" << fixed << setprecision(2) << gamma
+             << " seed=" << seed
+             << "  relleno=" << setprecision(3) << r.fill
              << "%  w_final=" << r.lastw << "  t=" << setprecision(1) << r.secs << "s\n";
         if (co.is_open())
-            co << file << "," << p << "," << gamma << "," << seed << "," << min_fr << ","
-               << max_bl << "," << tlimit << "," << fixed << setprecision(4) << r.fill << ","
+            co << file << "," << p << "," << fixed << setprecision(2) << gamma << ","
+               << seed << "," << min_fr << ","
+               << max_bl << "," << setprecision(1) << tlimit << "," << setprecision(4) << r.fill << ","
                << r.vol << "," << I.cvol << "," << r.lastw << "," << setprecision(2) << r.secs << "\n";
         if (!solfile.empty()) {
             BlockGenerator gen(I, max_bl, min_fr);
