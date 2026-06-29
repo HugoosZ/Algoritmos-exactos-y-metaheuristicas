@@ -1,0 +1,21 @@
+instancia,algoritmo,n_ejec,FO_mejor,FO_media,FO_std,FO_peor,tiempo_medio_ms
+easy,Greedy determinista,1,10764,10764.0,0.0,10764,0.15
+easy,Greedy estocastico,10,11170,10758.8,234.2,10325,0.12
+easy,SA (inicio greedy det.),10,12045,11742.0,191.9,11481,42.0
+easy,SA (inicio greedy estoc.),10,12045,11693.1,161.5,11481,44.99
+easy,Algoritmo Genetico,10,11546,11403.6,126.3,11277,25.89
+medium1,Greedy determinista,1,10547,10547.0,0.0,10547,0.49
+medium1,Greedy estocastico,10,10591,9671.5,729.4,7942,0.48
+medium1,SA (inicio greedy det.),10,10920,10711.4,179.3,10547,484.75
+medium1,SA (inicio greedy estoc.),10,10909,10679.1,123.0,10591,479.86
+medium1,Algoritmo Genetico,10,10794,10640.0,109.8,10447,57.26
+medium2,Greedy determinista,1,11397,11397.0,0.0,11397,0.54
+medium2,Greedy estocastico,10,11398,10734.6,421.7,9845,0.44
+medium2,SA (inicio greedy det.),10,12216,11925.1,283.6,11397,461.07
+medium2,SA (inicio greedy estoc.),10,12319,11809.5,384.9,11398,462.09
+medium2,Algoritmo Genetico,10,11973,11689.8,217.7,11400,55.65
+hard,Greedy determinista,1,8781,8781.0,0.0,8781,2.63
+hard,Greedy estocastico,10,8932,8364.0,285.8,7863,2.8
+hard,SA (inicio greedy det.),10,10339,9450.6,479.7,8781,8451.08
+hard,SA (inicio greedy estoc.),10,10022,9583.8,359.3,9030,6878.63
+hard,Algoritmo Genetico,10,9518,9285.0,180.8,8941,65.8

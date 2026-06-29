@@ -1,0 +1,21 @@
+instancia,algoritmo,mejor_conocida,gap_mejor_%,gap_media_%
+easy,Greedy determinista,12045,10.64,10.64
+easy,Greedy estocastico,12045,7.26,10.68
+easy,SA (inicio greedy det.),12045,0.0,2.52
+easy,SA (inicio greedy estoc.),12045,0.0,2.92
+easy,Algoritmo Genetico,12045,4.14,5.33
+medium1,Greedy determinista,10920,3.42,3.42
+medium1,Greedy estocastico,10920,3.01,11.43
+medium1,SA (inicio greedy det.),10920,0.0,1.91
+medium1,SA (inicio greedy estoc.),10920,0.1,2.21
+medium1,Algoritmo Genetico,10920,1.15,2.56
+medium2,Greedy determinista,12319,7.48,7.48
+medium2,Greedy estocastico,12319,7.48,12.86
+medium2,SA (inicio greedy det.),12319,0.84,3.2
+medium2,SA (inicio greedy estoc.),12319,0.0,4.14
+medium2,Algoritmo Genetico,12319,2.81,5.11
+hard,Greedy determinista,10339,15.07,15.07
+hard,Greedy estocastico,10339,13.61,19.1
+hard,SA (inicio greedy det.),10339,0.0,8.59
+hard,SA (inicio greedy estoc.),10339,3.07,7.3
+hard,Algoritmo Genetico,10339,7.94,10.19

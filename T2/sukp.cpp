@@ -266,88 +266,186 @@ SAResult simulatedAnnealing(const Instance& I, const vector<char>& startSel,
 }
 
 // -----------------------------------------------------------------------------
-//  (4) ALGORITMO GENETICO (memetico)
+//  (4) ALGORITMO GENETICO 
 //      - Cromosoma binario (alternativas seleccionadas).
 //      - Poblacion inicial: ejecuciones de greedy estocastico (+ algunos al azar).
 //      - Seleccion por torneo binario, cruce uniforme, mutacion bit-flip.
-//      - Decodificador con REPARACION (quita menos eficientes) + RELLENO greedy
-//        (agrega items factibles por orden estatico de razon) -> componente local.
 //      - Elitismo.
 // -----------------------------------------------------------------------------
 struct GAResult {
     ll best = 0;
     vector<char> bestSel;
     double timeMs = 0;
-    vector<tuple<int,ll,double>> trace;   // (generacion, mejor FO, FO promedio)
+    vector<tuple<int,ll,double>> trace;   // (generacion, mejor FO factible, fitness promedio)
 };
+
+struct EvalGA {
+    ll benefit = 0;
+    ll cost = 0;
+    bool feasible = false;
+    double fitness = 0.0;
+};
+
+// Evalua directamente un cromosoma sin repararlo ni rellenarlo.
+// Si es factible, el fitness es el beneficio.
+// Si es infactible, se penaliza segun el exceso de capacidad.
+EvalGA evaluateChromosomeClassic(const Instance& I,
+                                 const vector<char>& chromo,
+                                 double lambda) {
+    EvalGA e;
+    vector<char> usedResource(I.n, 0);
+
+    for (int i = 0; i < I.m; ++i) {
+        if (!chromo[i]) continue;
+
+        e.benefit += I.p[i];
+
+        for (int j : I.itemRes[i]) {
+            if (!usedResource[j]) {
+                usedResource[j] = 1;
+                e.cost += I.w[j];
+            }
+        }
+    }
+
+    e.feasible = (e.cost <= I.B);
+
+    if (e.feasible) {
+        e.fitness = (double)e.benefit;
+    } else {
+        ll excess = e.cost - I.B;
+        e.fitness = (double)e.benefit - lambda * (double)excess;
+    }
+
+    return e;
+}
 
 GAResult geneticAlgorithm(const Instance& I, uint64_t seed,
                           int popSize, int generations,
                           double pc, double pm, bool recordTrace) {
     mt19937_64 rng(seed);
     uniform_real_distribution<double> U(0.0, 1.0);
-    vector<int> fillOrder = computeFillOrder(I);
-    State scratch; scratch.init(&I);
-    vector<vector<char>> pop(popSize);
-    vector<ll> fit(popSize);
 
-    // poblacion inicial
+    vector<vector<char>> pop(popSize);
+    vector<double> fit(popSize);
+
+    GAResult R;
+
+    // Penalizacion suficientemente grande para castigar soluciones infactibles.
+    // totalP representa una cota superior simple del beneficio posible.
+    ll totalP = 0;
+    for (ll x : I.p) totalP += x;
+    double lambda = (double)totalP + 1.0;
+
+    // -------------------------------------------------------------------------
+    // Poblacion inicial:
+    // Se construye usando distintas ejecuciones del greedy estocastico.
+    // -------------------------------------------------------------------------
     for (int t = 0; t < popSize; ++t) {
-        if (t < (int)(popSize * 0.8)) {
-            double alpha = 0.2 + 0.4 * U(rng);            // variar la avidez
-            State g = greedyStochastic(I, rng, alpha);
-            fit[t] = repairAndFill(scratch, g.sel, fillOrder, rng);
-            pop[t] = scratch.sel;
-        } else {
-            vector<char> c(I.m, 0);
-            for (int i = 0; i < I.m; ++i) if (U(rng) < 0.5) c[i] = 1;
-            fit[t] = repairAndFill(scratch, c, fillOrder, rng);
-            pop[t] = scratch.sel;
+        double alpha = 0.1 + 0.8 * U(rng);   // distintos niveles de aleatoriedad
+        State g = greedyStochastic(I, rng, alpha);
+
+        pop[t] = g.sel;
+
+        EvalGA e = evaluateChromosomeClassic(I, pop[t], lambda);
+        fit[t] = e.fitness;
+
+        if (e.feasible && e.benefit > R.best) {
+            R.best = e.benefit;
+            R.bestSel = pop[t];
         }
     }
 
-    GAResult R;
-    int bestIdx = (int)(max_element(fit.begin(), fit.end()) - fit.begin());
-    R.best = fit[bestIdx]; R.bestSel = pop[bestIdx];
+    // Como la poblacion inicial viene de greedy estocastico, deberia existir
+    // al menos una solucion factible. Esta validacion es solo preventiva.
+    if (R.bestSel.empty()) {
+        State g = greedyDeterministic(I);
+        R.best = g.benefit;
+        R.bestSel = g.sel;
+    }
 
     auto t0 = chrono::high_resolution_clock::now();
-    auto tournament = [&](void) -> int {
-        int a = (int)(rng() % popSize), b = (int)(rng() % popSize);
+
+    // Seleccion por torneo binario usando fitness penalizado.
+    auto tournament = [&]() -> int {
+        int a = (int)(rng() % popSize);
+        int b = (int)(rng() % popSize);
         return (fit[a] >= fit[b]) ? a : b;
     };
 
     for (int gen = 1; gen <= generations; ++gen) {
         vector<vector<char>> npop(popSize);
-        vector<ll> nfit(popSize);
-        // elitismo
-        npop[0] = R.bestSel; nfit[0] = R.best;
+        vector<double> nfit(popSize);
+
+        // ---------------------------------------------------------------------
+        // Elitismo:
+        // Se conserva la mejor solucion factible encontrada hasta ahora.
+        // ---------------------------------------------------------------------
+        npop[0] = R.bestSel;
+        EvalGA eliteEval = evaluateChromosomeClassic(I, npop[0], lambda);
+        nfit[0] = eliteEval.fitness;
+
         for (int c = 1; c < popSize; ++c) {
-            int pa = tournament(), pb = tournament();
-            vector<char> child(I.m);
-            if (U(rng) < pc) {                            // cruce uniforme
-                for (int i = 0; i < I.m; ++i)
+            int pa = tournament();
+            int pb = tournament();
+
+            vector<char> child(I.m, 0);
+
+            // -----------------------------------------------------------------
+            // Cruce uniforme:
+            // Cada gen del hijo se toma desde uno de los dos padres.
+            // -----------------------------------------------------------------
+            if (U(rng) < pc) {
+                for (int i = 0; i < I.m; ++i) {
                     child[i] = (U(rng) < 0.5) ? pop[pa][i] : pop[pb][i];
+                }
             } else {
                 child = pop[pa];
             }
-            for (int i = 0; i < I.m; ++i)                 // mutacion bit-flip
-                if (U(rng) < pm) child[i] ^= 1;
-            nfit[c] = repairAndFill(scratch, child, fillOrder, rng);
-            npop[c] = scratch.sel;
+
+            // -----------------------------------------------------------------
+            // Mutacion bit-flip:
+            // Cada gen cambia con probabilidad pm.
+            // -----------------------------------------------------------------
+            for (int i = 0; i < I.m; ++i) {
+                if (U(rng) < pm) {
+                    child[i] ^= 1;
+                }
+            }
+
+            // -----------------------------------------------------------------
+            // Evaluacion directa del cromosoma sin reparacion ni relleno.
+            // Si es infactible, recibe penalizacion.
+            // -----------------------------------------------------------------
+            EvalGA e = evaluateChromosomeClassic(I, child, lambda);
+
+            npop[c] = child;
+            nfit[c] = e.fitness;
+
+            // El mejor reportado debe ser factible.
+            if (e.feasible && e.benefit > R.best) {
+                R.best = e.benefit;
+                R.bestSel = child;
+            }
         }
-        pop.swap(npop); fit.swap(nfit);
-        int bi = (int)(max_element(fit.begin(), fit.end()) - fit.begin());
-        if (fit[bi] > R.best) { R.best = fit[bi]; R.bestSel = pop[bi]; }
+
+        pop.swap(npop);
+        fit.swap(nfit);
+
         if (recordTrace) {
-            double avg = 0; for (ll f : fit) avg += (double)f; avg /= popSize;
-            R.trace.push_back({gen, R.best, avg});
+            double avgFit = 0.0;
+            for (double f : fit) avgFit += f;
+            avgFit /= popSize;
+
+            R.trace.push_back({gen, R.best, avgFit});
         }
     }
+
     auto t1 = chrono::high_resolution_clock::now();
     R.timeMs = chrono::duration<double, milli>(t1 - t0).count();
-    return R;
-}
 
+    return R;
+                          }
 // -----------------------------------------------------------------------------
 //  Utilidades de E/S
 // -----------------------------------------------------------------------------
