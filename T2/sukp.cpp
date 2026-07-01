@@ -1,14 +1,11 @@
 // =============================================================================
 //  Tarea 2 - CIT3352  Algoritmos Exactos y Metaheuristicas
-//  Set-Union Knapsack Problem (SUKP)
 //
 //  Implementa:
 //    (1) Greedy determinista
 //    (2) Greedy estocastico (GRASP, con semilla -> reproducible)
 //    (3) Algoritmo de trayectoria: Simulated Annealing (SA)
-//    (4) Algoritmo de poblacion: Algoritmo Genetico (GA, memetico con reparacion)
-//
-//  Exporta resultados a CSV para su posterior analisis grafico en Python.
+//    (4) Algoritmo de poblacion: Algoritmo Genetico
 //
 //  Grupo de 3 integrantes.
 // =============================================================================
@@ -53,7 +50,7 @@ Instance readInstance(const string& path, const string& name) {
 // -----------------------------------------------------------------------------
 //  Estado de una solucion con actualizacion incremental de costo
 //    rcount[j] = # de alternativas seleccionadas que usan el recurso j
-//    cost      = suma de pesos de los recursos en la UNION (cada uno una vez)
+//    cost      = suma de pesos de los recursos en la UNION 
 // -----------------------------------------------------------------------------
 struct State {
     const Instance* I = nullptr;
@@ -268,7 +265,7 @@ SAResult simulatedAnnealing(const Instance& I, const vector<char>& startSel,
 // -----------------------------------------------------------------------------
 //  (4) ALGORITMO GENETICO 
 //      - Cromosoma binario (alternativas seleccionadas).
-//      - Poblacion inicial: ejecuciones de greedy estocastico (+ algunos al azar).
+//      - Poblacion inicial: ejecuciones de greedy estocastico.
 //      - Seleccion por torneo binario, cruce uniforme, mutacion bit-flip.
 //      - Elitismo.
 // -----------------------------------------------------------------------------
@@ -286,7 +283,7 @@ struct EvalGA {
     double fitness = 0.0;
 };
 
-// Evalua directamente un cromosoma sin repararlo ni rellenarlo.
+// Evalua directamente un cromosoma.
 // Si es factible, el fitness es el beneficio.
 // Si es infactible, se penaliza segun el exceso de capacidad.
 EvalGA evaluateChromosomeClassic(const Instance& I,
@@ -414,7 +411,7 @@ GAResult geneticAlgorithm(const Instance& I, uint64_t seed,
             }
 
             // -----------------------------------------------------------------
-            // Evaluacion directa del cromosoma sin reparacion ni relleno.
+            // Evaluacion directa del cromosoma.
             // Si es infactible, recibe penalizacion.
             // -----------------------------------------------------------------
             EvalGA e = evaluateChromosomeClassic(I, child, lambda);

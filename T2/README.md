@@ -7,7 +7,7 @@ Solución completa en C++ con cuatro algoritmos y un script de graficación en P
 1. **Greedy determinista** — agrega el ítem factible con mejor razón beneficio/costo marginal (determinista, misma solución siempre).
 2. **Greedy estocástico (GRASP)** — construcción con lista restringida de candidatos (RCL); reproducible por semilla.
 3. **Simulated Annealing** (trayectoria) — opera sobre un decodificador (repara+rellena); T0 calibrada por el método de Ben-Ameur, enfriamiento geométrico. Se ejecuta desde inicio greedy determinista y desde greedy estocástico.
-4. **Algoritmo Genético memético** (población) — población inicial sembrada con greedy estocástico, selección por torneo, cruce uniforme, mutación bit-flip, elitismo y decodificación de cada hijo.
+4. **Algoritmo Genético ** (población) — población inicial sembrada con greedy estocástico, selección por torneo, cruce uniforme, mutación bit-flip y elitismo.
 
 ## Estructura
 
